@@ -1,5 +1,7 @@
 # RayMarchRenderer
  
+Joah Robak
+ 
 ## Overview
 
 This is a renderer written in C++ using OpenGL API. It uses ray marching to show some of it's capabilities.

@@ -2,7 +2,7 @@
  
 ## Overview
 
-This is renderer written in C++ using OpenGL API. It uses ray marching to show some of it's capabilities.
+This is a renderer written in C++ using OpenGL API. It uses ray marching to show some of it's capabilities.
 
 
 ## Requirements

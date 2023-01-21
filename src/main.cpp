@@ -40,6 +40,7 @@ glm::mat4 viewMatrix;
 
 const float MOVE_SPEED = 1.0f;
 const float MOUSE_SENSITIVITY = 0.1f;
+const float PITCH_LIMIT = 1.4F;
 
 GLuint vao, vbo;
 
@@ -205,6 +206,15 @@ void updateCameraVectors(glm::vec2 mPosition)
 
     float mYaw = mPosition.x;
     float mPitch = mPosition.y;
+
+	if (mPitch < -PITCH_LIMIT)
+	{
+		mPitch = -PITCH_LIMIT;
+	}
+	else if (mPitch > PITCH_LIMIT)
+	{
+		mPitch = PITCH_LIMIT;
+	}
 
 	glm::vec3 CamPos;
 

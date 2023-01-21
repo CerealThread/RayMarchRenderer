@@ -13,6 +13,8 @@ uniform mat4 viewMatrix;
 float mYaw;
 float mPitch;
 
+vec3 rayOrigin = vec3(0, 10, 0);
+
 out vec4 fragColor;
 
 
@@ -24,11 +26,11 @@ float GetDist(vec3 p) {
     return sphereDist;
 }
 
-float RayMarch(vec3 ro, vec3 rd) {
+float RayMarch(vec3 rayOrigin, vec3 rayDirection) {
     float dO=0.0;
 
     for(int i=0; i<MAX_STEPS;i++) {
-        vec3 p = ro + rd*dO;
+        vec3 p = rayOrigin + rayDirection*dO;
         float ds = GetDist(p);
         dO += ds;
         if(dO > MAX_DIST || ds<SURF_DIST) break;
@@ -56,15 +58,19 @@ float GetLight(vec3 p) {
     vec3 lightPos = vec3(0, 5, 6);
     lightPos.xy += vec2(sin(iTime), cos(iTime)) * 2.0;
 
-    vec3 l = normalize(lightPos-p);
+    vec3 lightDir = normalize(lightPos - p);
+    vec3 viewDir = normalize(rayOrigin - p);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+
     vec3 n = GetNormal(p);
 
-    float diffuse = clamp(dot(n, l), 0.0, 1.0);
+    float diffuse = max(dot(n, lightDir), 0.0);
+    float specular = pow(max(dot(n, halfwayDir), 0.0), 64.0);
 
-    //float d = RayMarch(p+n*SURF_DIST*2.0, l);
+    //float d = RayMarch(p+n*SURF_DIST*2.0, lightDir);
     //if(d<length(lightPos-p)) diffuse *= 0.1;
 
-    return diffuse;
+    return diffuse + specular;
 }
 
 
@@ -73,17 +79,17 @@ void main(void)
 
     vec2 uv = (gl_FragCoord.xy-.5*iResolution.xy)/iResolution.y;
 
-    vec3 ro = vec3(0, 10, pow(uTime/800, 1.3));
-    vec3 rd = (normalize(vec4(uv.x, uv.y, 1, 1) * viewMatrix)).xyz;   
+    rayOrigin = vec3(0, 10, pow(uTime/800, 1.3));
+    vec3 rayDirection = (normalize(vec4(uv.x, uv.y, 1, 1) * viewMatrix)).xyz;   
 
-    float d = RayMarch(ro, rd);
+    float d = RayMarch(rayOrigin, rayDirection);
 
-    vec3 p = ro + rd * d;
+    vec3 position = rayOrigin + rayDirection * d;
 
     float ambient = 0.60;
 
-    float diffuse = GetLight(p) + (-(d/40) + ambient);
+    float lighting = GetLight(position) + (-(d/40) + ambient);
 
-    vec3 col = vec3(diffuse);
+    vec3 col = vec3(lighting);
     fragColor = vec4(col, 1.0);
 }

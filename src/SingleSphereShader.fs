@@ -13,35 +13,13 @@ uniform mat4 viewMatrix;
 float mYaw;
 float mPitch;
 
+vec3 rayOrigin = vec3(0.0, 0.0, 0.0);
+
 out vec4 fragColor;
 
 float sdSphere(vec3 p, float s)
 {
     return length(p)-s;
-}
-
-float sdCapsule(vec3 p, vec3 a, vec3 b, float r) {
-    vec3 ab = b-a;
-    vec3 ap = p-a;
-    
-    float t = dot(ab, ap) / dot(ab, ab);
-    t = clamp(t, 0.0, 1.0);
-
-    vec3 c = a + t*ab;
-    return length(p-c)-r;
-}
-
-float sdTorus(vec3 p, vec2 r) {
-    float x = length(p.xz)-r.x;
-    return length(vec2(x, p.y))-r.y;
-}
-
-float maxcomp(in vec3 p ) { return max(p.x,max(p.y,p.z));}
-float sdBox( vec3 p, vec3 b )
-{
-  vec3  di = abs(p) - b;
-  float mc = maxcomp(di);
-  return min(mc,length(max(di,0.0)));
 }
 
 
@@ -56,11 +34,11 @@ float GetDist(vec3 p) {
     return bd;
 }
 
-float RayMarch(vec3 ro, vec3 rd) {
+float RayMarch(vec3 rayOrigin, vec3 rayDirection) {
     float dO=0.0;
 
     for(int i=0; i<MAX_STEPS;i++) {
-        vec3 p = ro + rd*dO;
+        vec3 p = rayOrigin + rayDirection*dO;
         float ds = GetDist(p);
         dO += ds;
         if(dO > MAX_DIST || ds<SURF_DIST) break;
@@ -86,13 +64,16 @@ float GetLight(vec3 p) {
     float iTime = uTime * 0.25;
 
     vec3 lightPos = vec3(0, 5, 6);
+    vec3 lightDir = normalize(lightPos - p);
+    vec3 viewDir = normalize(rayOrigin - p);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
 
-    vec3 l = normalize(lightPos-p);
     vec3 n = GetNormal(p);
 
-    float diffuse = clamp(dot(n, l), 0.0, 1.0);
+    float diffuse = max(dot(n, lightDir), 0.0);
+    float specular = pow(max(dot(n, halfwayDir), 0.0), 64.0);
 
-    return diffuse;
+    return diffuse + specular;
 }
 
 
@@ -101,17 +82,16 @@ void main(void)
 
     vec2 uv = (gl_FragCoord.xy-.5*iResolution.xy)/iResolution.y;
 
-    vec3 ro = vec3(0.0, 0.0, 0.0);
-    vec3 rd = (normalize(vec4(uv.x, uv.y, 1, 1) * viewMatrix)).xyz;   
+    vec3 rayDirection = (normalize(vec4(uv.x, uv.y, 1, 1) * viewMatrix)).xyz;   
 
-    float d = RayMarch(ro, rd);
+    float d = RayMarch(rayOrigin, rayDirection);
 
-    vec3 p = ro + rd * d;
+    vec3 position = rayOrigin + rayDirection * d;
 
-    float ambient = 0.60;
+    float ambient = 0.30;
 
-    float diffuse = GetLight(p) + (-(d/40) + ambient);
+    float lighting = GetLight(position) + (-(d/40) + ambient);
 
-    vec3 col = vec3(diffuse);
+    vec3 col = vec3(lighting);
     fragColor = vec4(col, 1.0);
 }
